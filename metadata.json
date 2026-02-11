@@ -1,0 +1,7 @@
+{
+  "name": "Copy of Poultry Manager Pro Nepal",
+  "description": "Offline-first Poultry Management System with PIN security, Nepali Date integration, and comprehensive analytics.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
