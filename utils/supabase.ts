@@ -1,13 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// NOTE: In a real production build, these should be in environment variables (import.meta.env.VITE_...)
-// For this demo, we check if they exist, otherwise we return null to prevent crashes.
-// You must create a project at https://supabase.com to get these keys.
+// Use Environment Variables if available, otherwise fall back to provided keys (for demo purposes)
+const SUPABASE_URL = (import.meta as any).env?.VITE_SUPABASE_URL || 'https://xxcqcvcyeayfkwhhdcgi.supabase.co';
+const SUPABASE_KEY = (import.meta as any).env?.VITE_SUPABASE_KEY || 'sb_publishable_3rRmeAKdAjZhubq_Bq0hfQ_n49eNQBu';
 
-const SUPABASE_URL = 'https://xxcqcvcyeayfkwhhdcgi.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_3rRmeAKdAjZhubq_Bq0hfQ_n49eNQBu';
-
-export const supabase = (SUPABASE_URL && SUPABASE_KEY) 
+export const supabase = (SUPABASE_URL && SUPABASE_KEY && SUPABASE_KEY !== 'sb_publishable_3rRmeAKdAjZhubq_Bq0hfQ_n49eNQBu') 
   ? createClient(SUPABASE_URL, SUPABASE_KEY) 
   : null;
 

@@ -47,10 +47,11 @@ export default function ReportsManager({ selectedFlockId }: Props) {
             const totalExpCost = expenses.reduce((s, x) => s + x.total, 0);
             const totalSales = sales.reduce((s, x) => s + x.total, 0);
             const totalDeath = mortality.reduce((s, x) => s + x.count, 0);
+            const totalSalesQty = sales.reduce((s, x) => s + x.quantity, 0);
             
             const totalCost = totalFeedCost + totalMedCost + totalExpCost;
             const netProfit = totalSales - totalCost;
-            const currentBirds = flock.totalBirds - totalDeath;
+            const currentBirds = flock.totalBirds - totalDeath - totalSalesQty;
 
             const doc = new jsPDF();
 
@@ -211,12 +212,25 @@ export default function ReportsManager({ selectedFlockId }: Props) {
                 );
             }
 
-            // Save File
+            // Save File using Blob for Mobile Compatibility
             const prefix = reportType === 'ALL' ? 'Full' : reportType.charAt(0) + reportType.slice(1).toLowerCase();
-            doc.save(`${prefix}_Report_${flock.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+            const filename = `${prefix}_Report_${flock.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            const pdfBlob = doc.output('blob');
+            const blobUrl = URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+
         } catch (e) {
             console.error(e);
-            alert("Error generating PDF");
+            alert("Error generating PDF. Please try again.");
         } finally {
             setIsGenerating(false);
         }

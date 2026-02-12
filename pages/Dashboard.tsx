@@ -69,9 +69,12 @@ const Dashboard: React.FC<Props> = ({ onViewChange, onSelectFlock }) => {
     const otherExp = allExp.reduce((s, x) => s + (x.total || 0), 0);
     const sales = allSales.reduce((s, x) => s + (x.total || 0), 0);
     
+    // Logic: Live Birds = Initial Stock - Mortality - Sales Quantity
     const totalInitial = f.reduce((s, x) => s + (x.totalBirds || 0), 0);
     const totalDeath = allMort.reduce((s, x) => s + (x.count || 0), 0);
-    const liveBirds = totalInitial - totalDeath;
+    const totalSalesQty = allSales.reduce((s, x) => s + (x.quantity || 0), 0);
+    
+    const liveBirds = totalInitial - totalDeath - totalSalesQty;
     const netProfit = sales - (feedCost + medCost + otherExp);
 
     const todayBS = getCurrentBS();
@@ -96,7 +99,7 @@ const Dashboard: React.FC<Props> = ({ onViewChange, onSelectFlock }) => {
         live_birds: {
             id: 'live_birds',
             title: 'Live Birds',
-            value: (liveBirds || 0).toLocaleString(),
+            value: (liveBirds > 0 ? liveBirds : 0).toLocaleString(),
             icon: Bird,
             colorClass: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
         },
@@ -189,7 +192,7 @@ const Dashboard: React.FC<Props> = ({ onViewChange, onSelectFlock }) => {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-8">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-800 dark:text-white">Farm Overview</h2>
         <button 

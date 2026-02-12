@@ -156,7 +156,16 @@ export default function ModuleManager({ type, selectedFlockId }: Props) {
           footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' }
       });
 
-      doc.save(`${type}_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      const filename = `${type}_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+      const pdfBlob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
   };
 
   const colCount = type === 'mortality' ? 4 : 5;

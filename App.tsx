@@ -3,7 +3,6 @@ import { db } from './utils/db';
 import { View, AppSettings } from './types';
 import PinLock from './components/PinLock';
 import Layout from './components/Layout';
-import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
 import FlockManager from './pages/FlockManager';
 import FeedManager from './pages/FeedManager';
@@ -18,7 +17,6 @@ const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 export default function App() {
   const [settings, setSettings] = useState<AppSettings>({ pinHash: null, isSetup: false, darkMode: false, sackWeightKg: 50 });
   const [isLocked, setIsLocked] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // New Auth State
   const [currentView, setCurrentView] = useState<View>(View.DASHBOARD);
   const [selectedFlockId, setSelectedFlockId] = useState<string>("");
   const [lastActivity, setLastActivity] = useState(Date.now());
@@ -28,16 +26,9 @@ export default function App() {
     const s = db.getSettings();
     setSettings(s);
     
-    // Check if user is logged in (session exists)
-    const session = db.getUserSession();
-    if(session) setIsAuthenticated(true);
-    // Alternatively, if no session, we can still allow offline usage (Guest Mode)
-    // The Auth screen handles the decision.
-    
-    if (!s.isSetup) {
-      // First time, not locked, needs setup
-      setIsLocked(true); 
-    }
+    // If not setup, we lock to force setup flow (handled by PinLock component)
+    // If setup, we start locked.
+    setIsLocked(true);
   }, []);
 
   // Activity Monitor for Auto-Lock
@@ -48,7 +39,10 @@ export default function App() {
     window.addEventListener('touchstart', updateActivity);
 
     const interval = setInterval(() => {
-      if (!isLocked && settings.isSetup && isAuthenticated) {
+      // Auto-lock should trigger if:
+      // 1. App is not currently locked
+      // 2. PIN setup is complete
+      if (!isLocked && settings.isSetup) {
         if (Date.now() - lastActivity > LOCK_TIMEOUT_MS) {
           setIsLocked(true);
         }
@@ -61,7 +55,7 @@ export default function App() {
       window.removeEventListener('touchstart', updateActivity);
       clearInterval(interval);
     };
-  }, [isLocked, lastActivity, settings.isSetup, isAuthenticated]);
+  }, [isLocked, lastActivity, settings.isSetup]);
 
   const handleUnlock = () => {
     setIsLocked(false);
@@ -71,36 +65,6 @@ export default function App() {
   const handleLockApp = () => {
     setIsLocked(true);
   };
-
-  // If not authenticated (and not in guest mode - though we treat Auth screen as entry point)
-  // We use a simple state check. Ideally, on first load, we show Auth.
-  const [showAuth, setShowAuth] = useState(true);
-
-  // Check persistent session on mount to skip auth screen if needed
-  useEffect(() => {
-      const session = db.getUserSession();
-      if(session) setShowAuth(false);
-  }, []);
-
-  if (showAuth) {
-      return (
-          <Auth 
-            onLogin={() => {
-                setShowAuth(false);
-                setIsAuthenticated(true);
-                // On first login, maybe not locked immediately?
-                setIsLocked(false);
-            }} 
-            onSkip={() => {
-                setShowAuth(false);
-                setIsAuthenticated(false);
-                // Guest mode still needs PIN setup if it exists
-                if(settings.isSetup) setIsLocked(true);
-                else setIsLocked(true);
-            }} 
-          />
-      );
-  }
 
   if (isLocked) {
     return (
@@ -119,13 +83,6 @@ export default function App() {
       />
     );
   }
-
-  const handleLogout = async () => {
-      await db.logout();
-      setIsAuthenticated(false);
-      setShowAuth(true);
-      setIsLocked(true);
-  };
 
   const renderView = () => {
     switch (currentView) {
@@ -159,7 +116,6 @@ export default function App() {
       currentView={currentView} 
       onChangeView={setCurrentView} 
       onLock={handleLockApp}
-      onLogout={handleLogout}
     >
       {renderView()}
     </Layout>
